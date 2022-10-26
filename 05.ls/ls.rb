@@ -7,52 +7,47 @@ MAX_COLUMN = 3
 SPACE_LENGTH = 3
 
 def main
-  files = search_files
-  row_count = (files.size.to_f / MAX_COLUMN).ceil
-  display_width = ajust_width(files).max + SPACE_LENGTH
-  output(row_count, files, display_width)
+  files = search_files(ARGV[0])
+  output(files)
 end
 
-def search_files
-  files = []
-  if ARGV.empty?
-    dirpath = Dir.getwd
-  elsif Dir.exist?(ARGV[0])
-    dirpath = ARGV[0]
-  elsif FileTest.exist?(ARGV[0])
-    files << ARGV[0]
-  end
+def search_files(path)
+  return [path] if FileTest.file?(path.to_s)
 
-  if files.empty?
-    Dir.foreach(dirpath) do |file|
-      files << file unless file.start_with?('.')
-    end
+  dirpath = ARGV.empty? ? Dir.getwd : path
+  files = []
+  Dir.foreach(dirpath) do |file|
+    files << file unless file.start_with?('.')
   end
   files.sort
 end
 
-def output(max_row, files_name, frame_width)
-  max_row.times do |i|
+def output(files_name)
+  row_count = (files_name.size.to_f / MAX_COLUMN).ceil
+  display_width = adjust_width(files_name).max
+  row_count.times do |i|
     MAX_COLUMN.times do |j|
-      print ljust_kana(files_name[i + j * max_row], frame_width) unless files_name[i + j * max_row].nil?
+      print ljust_kana(files_name[i + j * row_count], display_width)
       print "\n" if ((j + 1) % MAX_COLUMN).zero?
     end
   end
 end
 
-def ajust_width(files_str)
+def adjust_width(files_chars)
   addition_count = 2
-  files_str.map do |file_str|
-    judge_ascii(file_str, addition_count)
+  files_chars.map do |files_char|
+    count_ascii(files_char, addition_count) + SPACE_LENGTH
   end
 end
 
 def ljust_kana(file_name, max_width)
+  return '' if file_name.nil?
+
   addition_count = 1
-  file_name.ljust(max_width - judge_ascii(file_name, addition_count))
+  file_name.ljust(max_width - count_ascii(file_name, addition_count))
 end
 
-def judge_ascii(str, char_count)
+def count_ascii(str, char_count)
   str.chars.sum { |c| c.ascii_only? ? char_count - 1 : char_count }
 end
 
