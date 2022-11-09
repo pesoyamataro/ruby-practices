@@ -7,18 +7,21 @@ MAX_COLUMN = 3
 SPACE_LENGTH = 3
 
 def main
-  files = search_files(ARGV[0])
+  files = search_files
   output(files)
 end
 
-def search_files(path)
+def search_files
+  option = OptionParser.new
+  params = {}
+  option.on('-a') { |v| params[:a] = v }
+  path = option.parse!(ARGV)[0]
   return [path] if FileTest.file?(path.to_s)
 
   dirpath = ARGV.empty? ? Dir.getwd : path
-  files = Dir.foreach(dirpath).reject do |file|
-    file.start_with?('.')
+  Dir.foreach(dirpath).sort.reject do |file|
+    file.start_with?('.') unless params[:a]
   end
-  files.sort
 end
 
 def output(files)
