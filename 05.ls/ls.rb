@@ -18,10 +18,10 @@ def search_files
   path = option.parse!(ARGV)[0]
   return [path] if FileTest.file?(path.to_s)
 
-  dirpath = ARGV.empty? ? Dir.getwd : path
-  Dir.foreach(dirpath).sort.reject do |file|
-    file.start_with?('.') unless params[:a]
-  end
+  dirpath = path || Dir.getwd
+  Dir.foreach(dirpath).reject do |file|
+    file.start_with?('.') && !params[:a]
+  end.sort
 end
 
 def output(files)
