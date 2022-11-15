@@ -15,13 +15,14 @@ def search_files
   option = OptionParser.new
   params = {}
   option.on('-a') { |v| params[:a] = v }
+  option.on('-r') { |v| params[:r] = v }
   path = option.parse!(ARGV)[0]
   return [path] if FileTest.file?(path.to_s)
 
   dirpath = path || Dir.getwd
-  Dir.foreach(dirpath).reject do |file|
-    file.start_with?('.') && !params[:a]
-  end.sort
+  file_name = Dir.foreach(dirpath).reject { |file| file.start_with?('.') && !params[:a] }.sort
+  file_name.reverse! if params[:r]
+  file_name
 end
 
 def output(files)
