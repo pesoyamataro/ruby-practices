@@ -21,9 +21,7 @@ def search_files
 
   dirpath = path || Dir.getwd
   file_name = Dir.foreach(dirpath).reject { |file| file.start_with?('.') && !params[:a] }.sort
-  return file_name.reverse if params[:r]
-
-  file_name
+  params[:r] ? file_name.reverse : file_name
 end
 
 def output(files)
