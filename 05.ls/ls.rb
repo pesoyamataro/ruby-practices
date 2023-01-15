@@ -35,9 +35,8 @@ def main
   dirpath, all_files = FileTest.file?(argv_path) ? [File.dirname(argv_path), [File.basename(argv_path)]] : [argv_path, search_files(params, argv_path)]
   if params[:l]
     detail_files = get_detail_files(all_files, dirpath)
-    detail_display_size = adjust_display_size(detail_files)
-    total_size = detail_files.map { |detail_file| detail_file[:block_size] }.sum unless FileTest.file?(argv_path)
-    output_detail(detail_files, detail_display_size, total_size)
+    total_size = detail_files.sum { |file_detail| file_detail[:block_size] } unless FileTest.file?(argv_path)
+    output_detail(detail_files, total_size)
   else
     output_normal(all_files)
   end
@@ -62,18 +61,22 @@ def get_detail_files(file_names, dirpath)
   file_names.map do |file_name|
     fullpath = "#{dirpath}/#{file_name}"
     file_lstat = File.lstat(fullpath)
-    detail_files = {}
-    detail_files[:ftype] = FTYPE[file_lstat.ftype]
-    detail_files[:permission] = -3.upto(-1).map { |i| PERMISSIONS[file_lstat.mode.to_s(8).slice(i)] }.join
-    detail_files[:nlink] = file_lstat.nlink.to_s
-    detail_files[:uid] = Etc.getpwuid(file_lstat.uid).name
-    detail_files[:gid] = Etc.getgrgid(file_lstat.gid).name
-    detail_files[:file_size] = File.size(fullpath).to_s
-    detail_files[:mtime] = file_lstat.mtime.strftime('%_m月 %_d %_R')
-    detail_files[:file_name] = file_name
-    detail_files[:block_size] = file_lstat.blocks / 2 # 1ブロックサイズを512byte⇒1024byteに変換
-    detail_files
+    {
+      ftype: FTYPE[file_lstat.ftype],
+      permission: join_filemode(file_lstat),
+      nlink: file_lstat.nlink.to_s,
+      uid: Etc.getpwuid(file_lstat.uid).name,
+      gid: Etc.getgrgid(file_lstat.gid).name,
+      file_size: File.size(fullpath).to_s,
+      mtime: file_lstat.mtime.strftime('%_m月 %_d %_R'),
+      file_name: file_name,
+      block_size: file_lstat.blocks / 2 # 1ブロックサイズを512byte⇒1024byteに変換
+    }
   end
+end
+
+def join_filemode(file_lstat)
+  -3.upto(-1).map { |i| PERMISSIONS[file_lstat.mode.to_s(8).slice(i)] }.join
 end
 
 def adjust_display_size(detail_files)
@@ -95,7 +98,8 @@ def adjust_display_size(detail_files)
   }
 end
 
-def output_detail(detail_files, detail_display_size, total_size)
+def output_detail(detail_files, total_size)
+  detail_display_size = adjust_display_size(detail_files)
   puts "合計 #{total_size}" unless total_size.nil?
   detail_files.each do |detail_file|
     print detail_file[:ftype]
