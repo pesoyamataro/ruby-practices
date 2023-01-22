@@ -59,7 +59,7 @@ end
 
 def get_detail_files(file_names, dirpath)
   file_names.map do |file_name|
-    fullpath = "#{dirpath}/#{file_name}"
+    fullpath = File.join(dirpath, '/', file_name)
     file_lstat = File.lstat(fullpath)
     {
       ftype: FTYPE[file_lstat.ftype],
@@ -76,7 +76,10 @@ def get_detail_files(file_names, dirpath)
 end
 
 def join_filemode(file_lstat)
-  -3.upto(-1).map { |i| PERMISSIONS[file_lstat.mode.to_s(8).slice(i)] }.join
+  (-3..-1).map do |i|
+    element_filemode = file_lstat.mode.to_s(8).slice(i)
+    PERMISSIONS[element_filemode]
+  end.join
 end
 
 def adjust_display_size(detail_files)
@@ -91,23 +94,23 @@ def adjust_display_size(detail_files)
     all_file_size << detail_file[:file_size]
   end
   {
-    space_nlink: all_nlink.map(&:size).max,
-    space_owner: all_owner.map(&:size).max,
-    space_group: all_group.map(&:size).max,
-    space_file_size: all_file_size.map(&:size).max
+    nlink: all_nlink.map(&:size).max,
+    owner: all_owner.map(&:size).max,
+    group: all_group.map(&:size).max,
+    file_size: all_file_size.map(&:size).max
   }
 end
 
 def output_detail(detail_files, total_size)
-  detail_display_size = adjust_display_size(detail_files)
   puts "合計 #{total_size}" unless total_size.nil?
+  col_width = adjust_display_size(detail_files)
   detail_files.each do |detail_file|
     print detail_file[:ftype]
     print "#{detail_file[:permission]} "
-    print "#{detail_file[:nlink].rjust(detail_display_size[:space_nlink])} "
-    print "#{detail_file[:uid].ljust(detail_display_size[:space_owner])} "
-    print "#{detail_file[:gid].ljust(detail_display_size[:space_group])} "
-    print "#{detail_file[:file_size].rjust(detail_display_size[:space_file_size])} "
+    print "#{detail_file[:nlink].rjust(col_width[:nlink])} "
+    print "#{detail_file[:uid].ljust(col_width[:owner])} "
+    print "#{detail_file[:gid].ljust(col_width[:group])} "
+    print "#{detail_file[:file_size].rjust(col_width[:file_size])} "
     print "#{detail_file[:mtime]} "
     print detail_file[:file_name]
     print "\n"
