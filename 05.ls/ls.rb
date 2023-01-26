@@ -35,8 +35,8 @@ def main
   dirpath, all_files = FileTest.file?(argv_path) ? [File.dirname(argv_path), [File.basename(argv_path)]] : [argv_path, search_files(params, argv_path)]
   if params[:l]
     detail_files = get_detail_files(all_files, dirpath)
-    total_size = detail_files.sum { |file_detail| file_detail[:block_size] } unless FileTest.file?(argv_path)
-    output_detail(detail_files, total_size)
+    output_total(detail_files) unless FileTest.file?(argv_path)
+    output_detail(detail_files)
   else
     output_normal(all_files)
   end
@@ -59,7 +59,7 @@ end
 
 def get_detail_files(file_names, dirpath)
   file_names.map do |file_name|
-    fullpath = File.join(dirpath, '/', file_name)
+    fullpath = File.join(dirpath, file_name)
     file_lstat = File.lstat(fullpath)
     {
       ftype: FTYPE[file_lstat.ftype],
@@ -77,12 +77,12 @@ end
 
 def join_filemode(file_lstat)
   (-3..-1).map do |i|
-    element_filemode = file_lstat.mode.to_s(8).slice(i)
-    PERMISSIONS[element_filemode]
+    file_mode = file_lstat.mode.to_s(8).slice(i)
+    PERMISSIONS[file_mode]
   end.join
 end
 
-def adjust_display_size(detail_files)
+def calc_col_width(detail_files)
   all_nlink = []
   all_owner = []
   all_group = []
@@ -101,9 +101,13 @@ def adjust_display_size(detail_files)
   }
 end
 
-def output_detail(detail_files, total_size)
-  puts "合計 #{total_size}" unless total_size.nil?
-  col_width = adjust_display_size(detail_files)
+def output_total(detail_files)
+  total_size = detail_files.sum { |file_detail| file_detail[:block_size] }
+  puts "合計 #{total_size}"
+end
+
+def output_detail(detail_files)
+  col_width = calc_col_width(detail_files)
   detail_files.each do |detail_file|
     print detail_file[:ftype]
     print "#{detail_file[:permission]} "
