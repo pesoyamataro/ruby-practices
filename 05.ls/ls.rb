@@ -82,7 +82,7 @@ def join_filemode(file_lstat)
   end.join
 end
 
-def calc_col_width(detail_files)
+def calc_detail_col_width(detail_files)
   all_nlink = []
   all_owner = []
   all_group = []
@@ -107,7 +107,7 @@ def output_total(detail_files)
 end
 
 def output_detail(detail_files)
-  col_width = calc_col_width(detail_files)
+  col_width = calc_detail_col_width(detail_files)
   detail_files.each do |detail_file|
     print detail_file[:ftype]
     print "#{detail_file[:permission]} "
@@ -123,27 +123,27 @@ end
 
 def output_normal(all_files)
   row_count = (all_files.size.to_f / MAX_COLUMN).ceil
-  display_width = adjust_width(all_files).max
+  col_width = calc_normal_col_width(all_files).max
   row_count.times do |i|
     MAX_COLUMN.times do |j|
-      print ljust_kana(all_files[i + j * row_count], display_width)
+      print ljust_kana(all_files[i + j * row_count], col_width)
       print "\n" if ((j + 1) % MAX_COLUMN).zero?
     end
   end
 end
 
-def adjust_width(file_chars)
+def calc_normal_col_width(file_chars)
   addition_count = 2
   file_chars.map do |file_char|
     count_chars(file_char, addition_count) + SPACE_LENGTH
   end
 end
 
-def ljust_kana(file_name, display_width)
+def ljust_kana(file_name, col_width)
   return '' if file_name.nil?
 
   addition_count = 1
-  file_name.ljust(display_width - count_chars(file_name, addition_count))
+  file_name.ljust(col_width - count_chars(file_name, addition_count))
 end
 
 def count_chars(file_name, addition_count)
