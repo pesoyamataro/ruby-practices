@@ -31,10 +31,10 @@ FTYPE = {
 }.freeze
 
 def main
-  params, argv_path = separate_argv
-  dirpath, all_files = FileTest.file?(argv_path) ? [File.dirname(argv_path), [File.basename(argv_path)]] : [argv_path, search_files(params, argv_path)]
+  params, argv_path = parse_argv
+  dir_path, all_files = FileTest.file?(argv_path) ? [File.dirname(argv_path), [File.basename(argv_path)]] : [argv_path, search_files(params, argv_path)]
   if params[:l]
-    detail_files = get_detail_files(all_files, dirpath)
+    detail_files = get_detail_files(all_files, dir_path)
     output_total(detail_files) unless FileTest.file?(argv_path)
     output_detail(detail_files)
   else
@@ -42,7 +42,7 @@ def main
   end
 end
 
-def separate_argv
+def parse_argv
   option = OptionParser.new
   params = {}
   option.on('-a') { |v| params[:a] = v }
@@ -52,22 +52,22 @@ def separate_argv
   [params, argv_path]
 end
 
-def search_files(params, dirpath)
-  file_names = Dir.foreach(dirpath).reject { |file| file.start_with?('.') && !params[:a] }.sort
+def search_files(params, dir_path)
+  file_names = Dir.foreach(dir_path).reject { |file| file.start_with?('.') && !params[:a] }.sort
   params[:r] ? file_names.reverse : file_names
 end
 
-def get_detail_files(file_names, dirpath)
+def get_detail_files(file_names, dir_path)
   file_names.map do |file_name|
-    fullpath = File.join(dirpath, file_name)
-    file_lstat = File.lstat(fullpath)
+    full_path = File.join(dir_path, file_name)
+    file_lstat = File.lstat(full_path)
     {
       ftype: FTYPE[file_lstat.ftype],
       permission: join_filemode(file_lstat),
       nlink: file_lstat.nlink.to_s,
       uid: Etc.getpwuid(file_lstat.uid).name,
       gid: Etc.getgrgid(file_lstat.gid).name,
-      file_size: File.size(fullpath).to_s,
+      file_size: File.size(full_path).to_s,
       mtime: file_lstat.mtime.strftime('%_m月 %_d %_R'),
       file_name: file_name,
       block_size: file_lstat.blocks / 2 # 1ブロックサイズを512byte⇒1024byteに変換
