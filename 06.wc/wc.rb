@@ -8,9 +8,9 @@ require 'date'
 STDIN_COL_WIDTH = 7
 
 def main
-  params, argv_files = parse_argv
-  detail_files = argv_files.is_a?(Array) ? get_detail_files(argv_files) : [get_detail_stdin(argv_files)]
-  output(detail_files, params)
+  options, argv_files = parse_argv
+  detail_files = argv_files.empty? ? [read_detail_stdin] : get_detail_files(argv_files)
+  output(detail_files, options)
 end
 
 def parse_argv
@@ -19,8 +19,8 @@ def parse_argv
   option.on('-c') { |v| params[:c] = v }
   option.on('-w') { |v| params[:w] = v }
   option.on('-l') { |v| params[:l] = v }
-  argv_files = option.parse!(ARGV) == [] ? $stdin.read : option.parse!(ARGV)
-  if params == {}
+  argv_files = option.parse!(ARGV)
+  if params.empty?
     params = {
       c: true,
       w: true,
@@ -30,69 +30,63 @@ def parse_argv
   [params, argv_files]
 end
 
-def get_detail_files(argv_files)
-  argv_files.map do |argv_file|
-    full_path = File.join(File.dirname(argv_file), File.basename(argv_file))
-    read_file = File.read(full_path)
-    {
-      byte: File.size(full_path).to_s,
-      name: argv_file == full_path ? full_path : argv_file
-    }.merge(count_line_word(read_file))
+def get_detail_files(file_names)
+  file_names.map do |file_name|
+    content_file = File.read(file_name)
+    count_sentence(content_file, file_name)
   end
 end
 
-def get_detail_stdin(argv_stdin)
-  {
-    byte: argv_stdin.size.to_s
-  }.merge(count_line_word(argv_stdin))
+def read_detail_stdin
+  count_sentence($stdin.read)
 end
 
-def count_line_word(read_file)
+def count_sentence(sentence, file_name = nil)
   {
-    line: read_file.lines.count.to_s,
-    word: read_file.split(/\s+/).size.to_s
+    line: sentence.lines.count.to_s,
+    word: sentence.split(/\s+/).size.to_s,
+    byte: sentence.length.to_s,
+    name: file_name
   }
 end
 
-def output(detail_files, params)
+def output(detail_files, options)
   total_value = calc_total(detail_files)
   col_width = calc_col_width(detail_files, total_value)
   detail_files.each do |detail_file|
-    output_value(detail_file, col_width, params)
+    output_value(detail_file, col_width, options)
     print "#{detail_file[:name]}\n"
   end
   return if detail_files.size == 1
 
-  output_value(total_value, col_width, params)
+  output_value(total_value, col_width, options)
   print "total\n"
 end
 
 def calc_total(detail_files)
-  total_line = []
-  total_word = []
-  total_byte = []
+  total_line = 0
+  total_word = 0
+  total_byte = 0
   detail_files.each do |detail_file|
-    total_line << detail_file[:line].to_i
-    total_word << detail_file[:word].to_i
-    total_byte << detail_file[:byte].to_i
+    total_line += detail_file[:line].to_i
+    total_word += detail_file[:word].to_i
+    total_byte += detail_file[:byte].to_i
   end
   {
-    line: total_line.sum.to_s,
-    word: total_word.sum.to_s,
-    byte: total_byte.sum.to_s
+    line: total_line.to_s,
+    word: total_word.to_s,
+    byte: total_byte.to_s
   }
 end
 
 def calc_col_width(detail_files, total_value)
-  detail_files.map do |detail_file|
-    detail_file[:name].nil? ? STDIN_COL_WIDTH : total_value.values.max_by(&:length).length
-  end.max
+  detail_files[0][:name].nil? ? STDIN_COL_WIDTH : total_value.values.max_by(&:length).length
 end
 
-def output_value(detail_value, col_width, params)
-  print "#{detail_value[:line].rjust(col_width)} " if params[:l]
-  print "#{detail_value[:word].rjust(col_width)} " if params[:w]
-  print "#{detail_value[:byte].rjust(col_width)} " if params[:c]
+def output_value(detail_value, col_width, options)
+  print "#{detail_value[:line].rjust(col_width)} " if options[:l]
+  print "#{detail_value[:word].rjust(col_width)} " if options[:w]
+  print "#{detail_value[:byte].rjust(col_width)} " if options[:c]
 end
 
 main
