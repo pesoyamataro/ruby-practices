@@ -5,12 +5,10 @@ require 'optparse'
 require 'etc'
 require 'date'
 
-STDIN_COL_WIDTH = 7
-
 def main
   options, argv_files = parse_argv
-  file_details = argv_files.empty? ? [count_sentence($stdin.read)] : get_file_details(argv_files)
-  output(file_details, options)
+  text_details = argv_files.empty? ? [get_text_detail($stdin.read)] : get_text_details(argv_files)
+  output_lines(text_details, options)
 end
 
 def parse_argv
@@ -28,14 +26,14 @@ def parse_argv
   [options, argv_files]
 end
 
-def get_file_details(file_names)
+def get_text_details(file_names)
   file_names.map do |file_name|
-    file_content = File.read(file_name)
-    count_sentence(file_content, file_name)
+    file_sentense = File.read(file_name)
+    get_text_detail(file_sentense, file_name)
   end
 end
 
-def count_sentence(sentence, file_name = nil)
+def get_text_detail(sentence, file_name = nil)
   {
     line: sentence.lines.count,
     word: sentence.split(/\s+/).size,
@@ -44,43 +42,34 @@ def count_sentence(sentence, file_name = nil)
   }
 end
 
-def output(file_details, options)
-  total_value = calc_total(file_details)
-  col_width = calc_col_width(file_details, total_value)
-  file_details.each do |file_detail|
-    print_detail_value(file_detail, col_width, options)
-    print "#{file_detail[:name]}\n"
+def output_lines(text_details, options)
+  total_value = calc_total(text_details)
+  col_width = total_value.values_at(:line, :word, :byte).max.to_s.length
+  text_details.each do |text_detail|
+    output_line(text_detail, col_width, options)
   end
-  return if file_details.size == 1
+  return if text_details.size == 1
 
-  print_detail_value(total_value, col_width, options)
-  print "total\n"
+  output_line(total_value, col_width, options)
 end
 
-def calc_total(file_details)
-  total_line = 0
-  total_word = 0
-  total_byte = 0
-  file_details.each do |file_detail|
-    total_line += file_detail[:line]
-    total_word += file_detail[:word]
-    total_byte += file_detail[:byte]
+def calc_total(text_details)
+  total = Hash.new { |h, k| h[k] = 0 }
+  text_details.each do |text_detail|
+    total[:line] += text_detail[:line]
+    total[:word] += text_detail[:word]
+    total[:byte] += text_detail[:byte]
   end
-  {
-    line: total_line,
-    word: total_word,
-    byte: total_byte
-  }
+  total[:name] = 'total'
+  total
 end
 
-def calc_col_width(file_details, total_value)
-  file_details[0][:name].nil? ? STDIN_COL_WIDTH : total_value.values.max.to_s.length
-end
-
-def print_detail_value(detail_value, col_width, options)
+def output_line(detail_value, col_width, options)
   detail_value.each do |key, value|
     print "#{value.to_s.rjust(col_width)} " if options[key]
   end
+  print detail_value[:name] unless detail_value[:name].nil?
+  print "\n"
 end
 
 main
