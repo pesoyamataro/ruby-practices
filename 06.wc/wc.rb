@@ -48,27 +48,24 @@ def output_lines(text_details, options)
   text_details.each do |text_detail|
     output_line(text_detail, col_width, options)
   end
-  return if text_details.size == 1
-
-  output_line(total_value, col_width, options)
+  output_line(total_value, col_width, options) if text_details.size > 1
 end
 
 def calc_total(text_details)
   total = Hash.new { |h, k| h[k] = 0 }
-  text_details.each do |text_detail|
+  total[:name] = 'total'
+  text_details.each_with_object(total) do |text_detail|
     total[:line] += text_detail[:line]
     total[:word] += text_detail[:word]
     total[:byte] += text_detail[:byte]
   end
-  total[:name] = 'total'
-  total
 end
 
-def output_line(detail_value, col_width, options)
-  detail_value.each do |key, value|
-    print "#{value.to_s.rjust(col_width)} " if options[key]
+def output_line(text_detail, col_width, options)
+  %i[line word byte].each do |key|
+    print "#{text_detail[key].to_s.rjust(col_width)} " if options[key]
   end
-  print detail_value[:name] unless detail_value[:name].nil?
+  print text_detail[:name] unless text_detail[:name].nil?
   print "\n"
 end
 
