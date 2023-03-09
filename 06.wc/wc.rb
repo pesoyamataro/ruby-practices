@@ -52,13 +52,13 @@ def output_lines(text_details, options)
 end
 
 def calc_total(text_details)
-  total = Hash.new { |h, k| h[k] = 0 }
-  total[:name] = 'total'
-  text_details.each_with_object(total) do |text_detail|
+  total = { line: 0, word: 0, byte: 0, name: 'total' }
+  text_details.each do |text_detail|
     total[:line] += text_detail[:line]
     total[:word] += text_detail[:word]
     total[:byte] += text_detail[:byte]
   end
+  total
 end
 
 def output_line(text_detail, col_width, options)
